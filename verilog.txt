@@ -1,0 +1,122 @@
+// Total 14 components were used, 3 Full Adders, 6 2x1 Multiplexers, 3 Xor gates , 1 And gate, 1 Or gate
+
+
+// And gate module implementation takes 1 output and 2 inputs 
+module and_gate(output out, input inp1, inp2);
+assign out = inp1 & inp2; 
+endmodule
+
+// Not gate module implementation takes 1 output and 1 input 
+module not_gate(output out, input inp);
+assign out = ~ inp;
+endmodule
+
+// Or gate module implementation takes 1 output and 2 inputs 
+module or_gate(output out, input inp1, inp2);
+assign out = inp1 | inp2;
+endmodule
+
+// Xor gate module implementation takes 1 output and 2 inputs 
+module xor_gate(output out, input inp1, inp2);
+assign out = inp1 ^ inp2;
+endmodule
+
+
+// Full adder module implementation takes 2 outputs and 3 inputs 
+// Using 2 xor_gates, 2 and_gates and 1 or_gate
+module Full_Adder(output S, Cout,input X1, X2, Cin);  
+ wire a1, a2, a3;    
+  xor_gate u1(a1,X1,X2);// Xor gate u1 that stores the result of X1^X2 in a1
+  and_gate u2(a2,X1,X2);//and gate u2 that stores the result of X1&X2 in a2
+  and_gate u3(a3,a1,Cin);//and gate u3 that stores the result of a1(The output of xor_gate u1)&Cin in a3
+  or_gate u4(Cout,a2,a3);//or gate u4 that stores the result of a2(The output of and_gate u2)&a3(The output of and_gate u3) in Cout
+  xor_gate u5(S,a1,Cin); //xor gate u5 that stores the result of a1&Cin in S
+endmodule 
+
+  
+// 2x1 Multiplexer module implementation takes 1 output and 3 inputs 
+// Using 2 and gates , 1 not gate and 1 or gate
+module m21(output Y, input D0, D1, S);
+wire T1, T2, T3;
+  and_gate u1(T1, D1, S);//and gate u1 that stores the result of D1&S in T1
+  not_gate u2(T2, S);//not gate u2 that stores the result of ~s in T2
+  and_gate u3(T3, D0, T2);//and gate u3 that stores the result of D0&T2 in T3
+  or_gate u4(Y, T1, T3);//or gate u4 that stores the result of T1|T3 in Y
+endmodule
+
+
+
+
+//Final circuit module implementation takes 4 inputs and 1 outputs
+//The inputs consists of 1-bit selector0 and selector1 ,3-bits two signed integers 
+//The output consists of 3-bits signed integer
+module final_circuit(input s0,s1,input [2:0] a,b,output [2:0] sum);
+  
+  wire O1,O2,M1,M2,M3,B1,B2,B3,xor_B1,xor_B2,xor_B3,carry1,carry2,carry3;
+and_gate And(O1,s0,s1); //and gate And that stores the result of s0&s1 in O1
+or_gate Or(O2,s0,s1); //or gate Or that stores the result of s0|s1 in O2
+  
+  m21 Mux1(M1,a[0],0,O1);//2x1 Multiplexer Mux1 with O1 as a selector , a[0] and 0 as inputs and M1 as output
+  m21 Mux2(M2,a[1],0,O1);//2x1 Multiplexer Mux2 with O1 as a selector , a[1] and 0 as inputs and M2 as output
+  m21 Mux3(M3,a[2],0,O1);//2x1 Multiplexer Mux3 with O1 as a selector , a[2] and 0 as inputs and M3 as output
+
+  m21 Mux4(B1,1,b[0],O2);//2x1 Multiplexer Mux4 with O2 as a selector , 1 and b[0] as inputs and B1 as output
+  m21 Mux5(B2,1,b[1],O2);//2x1 Multiplexer Mux5 with O2 as a selector , 1 and b[1] as inputs and B2 as output
+  m21 Mux6(B3,1,b[2],O2);//2x1 Multiplexer Mux6 with O2 as a selector , 1 and b[2] as inputs and B3 as output
+
+  xor_gate Xor1(xor_B1,B1,s1);//xor gate Xor1 that stores the result of B1(The ouput of 2x1 Multiplexer Mux4)^s1 in xor_B1 
+  xor_gate Xor2(xor_B2,B2,s1);//xor gate Xor2 that stores the result of B2(The ouput of 2x1 Multiplexer Mux5)^s1 in xor_B2 
+  xor_gate Xor3(xor_B3,B3,s1);//xor gate Xor3 that stores the result of B3(The ouput of 2x1 Multiplexer Mux6)^s1 in xor_B3 
+  
+  //Full Adder Full_1 takes 3 inputs M1(The ouput of 2x1 Multiplexer Mux1) ,xor_B1(The output of xor gate Xor1) and s1. Then returns sum[0] and carry1
+  Full_Adder Full_1(sum[0],carry1,M1,xor_B1,s1);
+  //Full Adder Full_2 takes 3 inputs M2(The ouput of 2x1 Multiplexer Mux2) ,xor_B2(The output of xor gate Xor2) and carry1. Then returns sum[1] and carry2
+  Full_Adder Full_2(sum[1],carry2,M2,xor_B2,carry1);
+  //Full Adder Full_3 takes 3 inputs M3(The ouput of 2x1 Multiplexer Mux3) ,xor_B3(The output of xor gate Xor3) and carry2. Then returns sum[2] and carry3
+  Full_Adder Full_3(sum[2],carry3,M3,xor_B3,carry2);
+  
+endmodule
+module final_curcit_tb;
+  // inputs
+  reg s0;//selector 1
+  reg s1;// selector 2
+  reg [2:0] a;//3-bit signed integer
+  reg [2:0] b;//3-bit signed integer
+  integer cnt;//first counter
+  integer cnt2;//second counter
+
+  //outputs
+  wire [2:0]sum;//3-bit signed integer
+  
+  //pass the values to f1 
+  final_circuit f1(
+  
+    .s0(s0),
+    .s1(s1),
+    .a(a),
+    .b(b),
+    .sum(sum)
+    
+  );
+initial begin
+
+  //nested for loop to change the values of s1,s0,b from 0 to 3  and a from 0 to 7
+
+  for(cnt=0;cnt<8;cnt=cnt+1)begin
+    for(cnt2 = 0;cnt2<4;cnt2=cnt2+1)begin
+      {s1, s0} = cnt2;a = cnt;b = cnt2;
+      	$monitor("time=%3d , selector1 = %b , selector2 = %b , A = %3b , B = %3b , Sum = %3b  \n",$time,s1,s0,a,b,sum);//display the results
+    	#5;// 5 ns difference
+    end
+  end
+  //nested for loop to change the values of s1,s0 from 0 to 3  , a from 0 to 7 and b from 4 to 7
+  for(cnt=0;cnt<8;cnt=cnt+1)begin
+    for(cnt2 = 0;cnt2<4;cnt2=cnt2+1)begin
+      {s1, s0} = cnt2;a = cnt;b = cnt2+4;
+      $monitor("time=%3d , selector1 = %b , selector2 = %b , A = %3b , B = %3b , Sum = %3b  \n",$time,s1,s0,a,b,sum);//display the results
+    	#5;// 5 ns difference
+    end
+  end
+
+end
+endmodule
